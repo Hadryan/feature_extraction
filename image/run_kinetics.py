@@ -54,7 +54,7 @@ def extract_feats(params, model, load_image_fn, C, H, W):
             tqdm.write('%s: %s %s' % (file_name, str(feats.shape), str(logits.shape)))
 
             with open(os.path.join(save_path, file_name), 'wb') as f:
-                f.write(pickle.dumps({'feats': feats, 'logits': logits}))
+                f.write(pickle.dumps([feats, logits]))
 
 
 if __name__ == '__main__':
