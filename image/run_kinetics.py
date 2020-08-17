@@ -78,9 +78,6 @@ if __name__ == '__main__':
     if not os.path.exists(params['feat_path']):
         os.makedirs(params['feat_path'])
 
-    if not params['not_extract_feat']: assert params['feat_name']
-    if params['extract_logit']: assert params['logit_name']
-
     print('Model: %s' % params['model'])
     print('The extracted features will be saved to --> %s' % params['feat_path'])
 
@@ -98,7 +95,8 @@ if __name__ == '__main__':
         model = pretrainedmodels.resnet34(pretrained='imagenet')
     elif params['model'] == 'inceptionresnetv2':
         C, H, W = 3, 299, 299
-        model = pretrainedmodels.inceptionresnetv2(pretrained='imagenet')
+        model = pretrainedmodels.inceptionresnetv2(
+            num_classes=1001, pretrained='imagenet+background')
     elif params['model'] == 'googlenet':
         C, H, W = 3, 224, 224
         model = googlenet(pretrained=True)
@@ -115,21 +113,11 @@ if __name__ == '__main__':
     extract_feats(params, model, load_image_fn, C, H, W)
 
 '''
-python extract_image_feats_from_frames.py \
---frame_path "/home/yangbang/VideoCaptioning/MSRVTT/all_frames/" \
---feat_path "/home/yangbang/VideoCaptioning/MSRVTT/feats/" \
---feat_name msrvtt_R152 \
---model resnet152 \
+python run_kinetics.py \
+--frame_path /disk2/zhangcan/dataset/kinetics_frames \
+--feat_path /home/yangbang/VideoCaptioning/kinetics/feats/image_IRv2 \
+--model inceptionresnetv2 \
 --k 60 \
 --frame_suffix jpg \
---gpu 2
-
-python extract_image_feats_from_frames.py \
---frame_path "/home/yangbang/VideoCaptioning/Youtube2Text/all_frames/" \
---feat_path "/home/yangbang/VideoCaptioning/Youtube2Text/feats/" \
---feat_name msvd_R152 \
---model resnet152 \
---k 60 \
---frame_suffix jpg \
---gpu 3
+--gpu 0
 '''
