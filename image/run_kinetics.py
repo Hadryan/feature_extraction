@@ -48,7 +48,7 @@ def extract_feats(params, model, load_image_fn, C, H, W):
                 feats = model.features(images.cuda())
                 logits = model.logits(feats)
                 
-            feats = feats.squeeze().cpu().numpy()
+            feats = feats.squeeze().mean(-1).mean(-1).cpu().numpy()
             logits = logits.squeeze().cpu().numpy()
 
             tqdm.write('%s: %s %s' % (file_name, str(feats.shape), str(logits.shape)))
