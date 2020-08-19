@@ -16,11 +16,12 @@ from torch import Tensor
 import torch.utils.model_zoo as model_zoo
 from PIL import Image
 import pickle
+from multipprocessing import Process
 
-def extract_feats(params, model, load_image_fn, C, H, W):
+def extract_feats(paths, params, model, load_image_fn, C, H, W):
     model.eval()
 
-    for category in tqdm(os.listdir(params['frame_path'])):
+    for category in tqdm(paths):
         save_path = os.path.join(params['feat_path'], category)
         if not os.path.exists(save_path):
             os.makedirs(save_path)
@@ -70,6 +71,7 @@ if __name__ == '__main__':
     parser.add_argument("--k", type=int, default=60, 
         help='uniformly sample k frames from the existing frames and then extract their features. k=0 will extract all existing frames')
     parser.add_argument("--frame_suffix", type=str, default='jpg')
+    parser.add_argument("--num_processes", type=int, default=3)
     
     args = parser.parse_args()
     params = vars(args)
@@ -110,8 +112,17 @@ if __name__ == '__main__':
 
     model = model.cuda()
 
-    #summary(model, (C, H, W))
-    extract_feats(params, model, load_image_fn, C, H, W)
+    paths = os.listdir(params['frame_path'])
+    paths = np.array_split(paths, params['num_processes'])
+    processes = []
+    for i in range(params['num_processes']):
+        proc = Process(target=extract_feats, args=(paths[i], params, model, load_image_fn, C, H, W))
+        proc.start()
+        processes.append(proc)
+
+    for i in range(params['num_processes']):
+        processes[i].join()
+    
 
 '''
 python run_kinetics.py \
@@ -120,5 +131,6 @@ python run_kinetics.py \
 --model inceptionresnetv2 \
 --k 60 \
 --frame_suffix jpg \
---gpu 0
+--gpu 0 \
+--num_processes 3
 '''
