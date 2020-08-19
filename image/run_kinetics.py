@@ -32,8 +32,10 @@ def extract_feats(params, model, load_image_fn, C, H, W):
                 continue
             
             image_list = sorted(glob.glob(os.path.join(frames_dst, '*.%s' % params['frame_suffix'])))
+            if len(image_list) == 0:
+                continue
 
-            if params['k']: 
+            if params['k'] and len(image_list) > params['k']:
                 images = torch.zeros((params['k'], C, H, W))
                 bound = [int(i) for i in np.linspace(0, len(image_list), params['k']+1)]
                 for i in range(params['k']):
@@ -45,7 +47,7 @@ def extract_feats(params, model, load_image_fn, C, H, W):
                     images[i] = load_image_fn(image_path)
 
             with torch.no_grad():
-                feats = model.features(images.cuda())
+                feats = model.features(images.cuda().to(torch.float32))
                 logits = model.logits(feats)
                 
             feats = feats.squeeze().mean(-1).mean(-1).cpu().numpy()
@@ -105,7 +107,6 @@ if __name__ == '__main__':
         print("doesn't support %s" % (params['model']))
 
     load_image_fn = utils.LoadTransformImage(model)
-    model.last_linear = utils.Identity() 
 
     model = model.cuda()
 
