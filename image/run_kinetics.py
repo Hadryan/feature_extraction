@@ -16,9 +16,35 @@ from torch import Tensor
 import torch.utils.model_zoo as model_zoo
 from PIL import Image
 import pickle
-from multipprocessing import Process
+from multiprocessing import Process
 
-def extract_feats(paths, params, model, load_image_fn, C, H, W):
+def extract_feats(paths, params):
+    if params['model'] == 'resnet101':
+        C, H, W = 3, 224, 224
+        model = pretrainedmodels.resnet101(pretrained='imagenet')
+    elif params['model'] == 'resnet152':
+        C, H, W = 3, 224, 224
+        model = pretrainedmodels.resnet152(pretrained='imagenet')
+    elif params['model'] == 'resnet18':
+        C, H, W = 3, 224, 224
+        model = pretrainedmodels.resnet18(pretrained='imagenet')
+    elif params['model'] == 'resnet34':
+        C, H, W = 3, 224, 224
+        model = pretrainedmodels.resnet34(pretrained='imagenet')
+    elif params['model'] == 'inceptionresnetv2':
+        C, H, W = 3, 299, 299
+        model = pretrainedmodels.inceptionresnetv2(
+            num_classes=1001, pretrained='imagenet+background')
+    elif params['model'] == 'googlenet':
+        C, H, W = 3, 224, 224
+        model = googlenet(pretrained=True)
+        print(model)
+    else:
+        print("doesn't support %s" % (params['model']))
+
+    load_image_fn = utils.LoadTransformImage(model)
+
+    model = model.cuda()
     model.eval()
 
     for category in tqdm(paths):
@@ -85,38 +111,11 @@ if __name__ == '__main__':
     print('Model: %s' % params['model'])
     print('The extracted features will be saved to --> %s' % params['feat_path'])
 
-    if params['model'] == 'resnet101':
-        C, H, W = 3, 224, 224
-        model = pretrainedmodels.resnet101(pretrained='imagenet')
-    elif params['model'] == 'resnet152':
-        C, H, W = 3, 224, 224
-        model = pretrainedmodels.resnet152(pretrained='imagenet')
-    elif params['model'] == 'resnet18':
-        C, H, W = 3, 224, 224
-        model = pretrainedmodels.resnet18(pretrained='imagenet')
-    elif params['model'] == 'resnet34':
-        C, H, W = 3, 224, 224
-        model = pretrainedmodels.resnet34(pretrained='imagenet')
-    elif params['model'] == 'inceptionresnetv2':
-        C, H, W = 3, 299, 299
-        model = pretrainedmodels.inceptionresnetv2(
-            num_classes=1001, pretrained='imagenet+background')
-    elif params['model'] == 'googlenet':
-        C, H, W = 3, 224, 224
-        model = googlenet(pretrained=True)
-        print(model)
-    else:
-        print("doesn't support %s" % (params['model']))
-
-    load_image_fn = utils.LoadTransformImage(model)
-
-    model = model.cuda()
-
     paths = os.listdir(params['frame_path'])
     paths = np.array_split(paths, params['num_processes'])
     processes = []
     for i in range(params['num_processes']):
-        proc = Process(target=extract_feats, args=(paths[i], params, model, load_image_fn, C, H, W))
+        proc = Process(target=extract_feats, args=(paths[i], params))
         proc.start()
         processes.append(proc)
 
